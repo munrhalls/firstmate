@@ -753,8 +753,15 @@ fm_backend_herdr_projection_journal_replace_endpoint() {  # <journal> <task-id> 
 # Removes firstmate/, 2ndmate-<id>/, and a presentation-level fm- owner
 # prefix when present. The ordinary task tab remains fm-<id> and is not
 # built by this helper.
+# A remainder longer than FM_BACKEND_HERDR_PROJECTION_LABEL_MAX is
+# middle-ellipsized rather than end-truncated: the tail of a task id is
+# usually its most distinguishing part (the specific detail plus the
+# uniquing suffix), and end-truncation would instead keep a long shared
+# lead-in intact while every task that shares it collapses to the
+# same-looking sidebar row.
+FM_BACKEND_HERDR_PROJECTION_LABEL_MAX=28
 fm_backend_herdr_projection_concise_task_label() {  # <task-id>
-  local task=$1
+  local task=$1 max=$FM_BACKEND_HERDR_PROJECTION_LABEL_MAX body head_len tail_len
   case "$task" in
     firstmate/*) task=${task#firstmate/} ;;
     2ndmate-*/*) task=${task#*/} ;;
@@ -762,6 +769,12 @@ fm_backend_herdr_projection_concise_task_label() {  # <task-id>
   case "$task" in
     fm-*) task=${task#fm-} ;;
   esac
+  if [ "${#task}" -gt "$max" ]; then
+    body=$(( max - 1 ))
+    head_len=$(( (body + 1) / 2 ))
+    tail_len=$(( body - head_len ))
+    task="${task:0:head_len}…${task:0-tail_len}"
+  fi
   printf '%s' "$task"
 }
 
